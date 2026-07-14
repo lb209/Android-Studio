@@ -1,3 +1,5 @@
+rootProject.name = "KotlinAppFixed"
+
 pluginManagement {
     repositories {
         google {
@@ -22,6 +24,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "kotlin"
 include(":app")
- 
