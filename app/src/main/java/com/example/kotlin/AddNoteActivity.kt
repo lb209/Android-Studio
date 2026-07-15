@@ -1,23 +1,21 @@
 package com.example.kotlin
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.kotlin.adapter.NoteAdapter
+import com.example.kotlin.data.Note
 import com.example.kotlin.data.NoteDatabase
 import com.example.kotlin.data.NoteRepository
 import com.example.kotlin.viewmodel.NoteViewModel
 import com.example.kotlin.viewmodel.NoteViewModelFactory
 
-class MainActivity : AppCompatActivity() {
+class AddNoteActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var noteAdapter: NoteAdapter
-    private lateinit var btnAdd: Button
+    private lateinit var editTitle: EditText
+    private lateinit var editContent: EditText
+    private lateinit var btnSave: Button
 
     private lateinit var database: NoteDatabase
     private lateinit var repository: NoteRepository
@@ -25,15 +23,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_add_note)
 
-        btnAdd = findViewById(R.id.btnAdd)
-        recyclerView = findViewById(R.id.recyclerViewNotes)
-
-        noteAdapter = NoteAdapter()
-
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = noteAdapter
+        editTitle = findViewById(R.id.editTitle)
+        editContent = findViewById(R.id.editContent)
+        btnSave = findViewById(R.id.btnSave)
 
         database = NoteDatabase.getDatabase(this)
 
@@ -44,17 +38,24 @@ class MainActivity : AppCompatActivity() {
             NoteViewModelFactory(repository)
         )[NoteViewModel::class.java]
 
-        viewModel.allNotes.observe(this) { notes ->
+        btnSave.setOnClickListener {
 
-            noteAdapter.setNotes(notes)
+            val title = editTitle.text.toString().trim()
 
-        }
+            val content = editContent.text.toString().trim()
 
-        btnAdd.setOnClickListener {
+            if (title.isNotEmpty() && content.isNotEmpty()) {
 
-            val intent = Intent(this, AddNoteActivity::class.java)
+                val note = Note(
+                    title = title,
+                    content = content
+                )
 
-            startActivity(intent)
+                viewModel.insertNote(note)
+
+                finish()
+
+            }
 
         }
 

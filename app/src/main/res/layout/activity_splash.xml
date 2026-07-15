@@ -25,7 +25,6 @@
         android:text="Notes App"
         android:textColor="@color/black"
         android:textSize="42sp"
-        android:textStyle="bold"
         android:layout_marginTop="20dp"
         />
 

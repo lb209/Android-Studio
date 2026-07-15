@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.parcelize)
 }
@@ -33,21 +34,27 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     ndkVersion = "11"
+}
 
+kotlin {
+    jvmToolchain(11)
+}
 
-    //noinspection WrongGradleMethod
-    kotlin {
-        jvmToolchain(11)
+// یہ بلاک کسی بھی دوسری لائبریری کو زبردستی نیا ورژن ڈاؤن لوڈ کرنے سے روکے گا
+configurations.all {
+    resolutionStrategy {
+        force("androidx.core:core:1.13.1")
+        force("androidx.core:core-ktx:1.13.1")
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core-ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     // Room Database
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -56,7 +63,7 @@ dependencies {
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.2")
-
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
