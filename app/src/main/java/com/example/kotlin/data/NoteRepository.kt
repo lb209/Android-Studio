@@ -26,4 +26,10 @@ class NoteRepository(
 
     }
 
+    fun searchNotes(search: String): LiveData<List<Note>> {
+
+        return noteDao.searchNotes(search)
+
+    }
+
 }

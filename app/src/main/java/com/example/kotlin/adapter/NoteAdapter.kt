@@ -3,13 +3,17 @@ package com.example.kotlin.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.kotlin.R
 import com.example.kotlin.data.Note
 
 class NoteAdapter(
-    private val onItemClick: (Note) -> Unit
+
+    private val onEditClick: (Note) -> Unit,
+    private val onDeleteClick: (Note) -> Unit
+
 ) : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
 
     private val noteList = ArrayList<Note>()
@@ -20,9 +24,16 @@ class NoteAdapter(
 
         val txtContent: TextView = itemView.findViewById(R.id.txtDescription)
 
+        val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
+
+        val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): NoteViewHolder {
 
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_note, parent, false)
@@ -31,7 +42,10 @@ class NoteAdapter(
 
     }
 
-    override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: NoteViewHolder,
+        position: Int
+    ) {
 
         val note = noteList[position]
 
@@ -39,9 +53,15 @@ class NoteAdapter(
 
         holder.txtContent.text = note.content
 
-        holder.itemView.setOnClickListener {
+        holder.btnEdit.setOnClickListener {
 
-            onItemClick(note)
+            onEditClick(note)
+
+        }
+
+        holder.btnDelete.setOnClickListener {
+
+            onDeleteClick(note)
 
         }
 

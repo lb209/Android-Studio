@@ -44,6 +44,12 @@ class NoteViewModel(
 
     }
 
+    fun searchNotes(search: String): LiveData<List<Note>> {
+
+        return repository.searchNotes(search.trim())
+
+    }
+
 }
 
 class NoteViewModelFactory(
@@ -54,6 +60,7 @@ class NoteViewModelFactory(
 
         if (modelClass.isAssignableFrom(NoteViewModel::class.java)) {
 
+            @Suppress("UNCHECKED_CAST")
             return NoteViewModel(repository) as T
 
         }
