@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,12 +23,14 @@ import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: NoteAdapter
     private lateinit var viewModel: NoteViewModel
+    private lateinit var auth: FirebaseAuth
     private var fullNotesList: List<Note> = emptyList()
     private var isSearching: Boolean = false
 
@@ -37,6 +40,18 @@ class MainActivity : AppCompatActivity() {
 
         window.statusBarColor = Color.parseColor("#161622")
 
+        auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+
+
+        if (currentUser == null) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
+        val currentUserId = currentUser.uid
+
         val database = AppDatabase.getDatabase(this)
         val repository = NoteRepository(database.noteDao())
         val factory = NoteViewModelFactory(repository)
@@ -45,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         val layoutHeader = findViewById<RelativeLayout>(R.id.layoutHeader)
         val layoutSearchBar = findViewById<LinearLayout>(R.id.layoutSearchBar)
         val imgSearchIcon = findViewById<ImageView>(R.id.imgSearchIcon)
+        val imgLogout = findViewById<ImageView>(R.id.imgLogout) // 👈 لاگ آؤٹ آئیکن
         val imgCloseSearch = findViewById<ImageView>(R.id.imgCloseSearch)
         val etSearch = findViewById<EditText>(R.id.etSearch)
 
@@ -59,16 +75,30 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
+
         viewModel.allNotes.observe(this) { notes ->
             if (notes != null) {
-                fullNotesList = notes
+
+                val userSpecificNotes = notes.filter { it.userId == currentUserId }
+                fullNotesList = userSpecificNotes
+
                 if (!isSearching && etSearch.text.toString().trim().isEmpty()) {
-                    adapter.setData(notes)
+                    adapter.setData(userSpecificNotes)
                 }
             }
         }
 
         viewModel.getNotes()
+
+        // 🟢 LOGOUT FUNCTIONALITY
+        imgLogout?.setOnClickListener {
+            auth.signOut()
+            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
 
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}

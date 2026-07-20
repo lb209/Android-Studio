@@ -3,6 +3,7 @@ package com.example.myapplication.database
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.Update
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.myapplication.model.Note
@@ -17,7 +18,8 @@ interface NoteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: Note)
-
+    @Update
+    suspend fun updateNote(note: Note)
     @Query("DELETE FROM notes WHERE id = :id")
     suspend fun deleteNote(id: Int)
 

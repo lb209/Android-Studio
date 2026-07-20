@@ -12,13 +12,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.database.AppDatabase
-import com.example.myapplication.model.AddNoteRequest
 import com.example.myapplication.model.Note
 import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
 import java.util.Locale
 
 class VoiceNoteActivity : AppCompatActivity() {
@@ -64,7 +64,6 @@ class VoiceNoteActivity : AppCompatActivity() {
 
             fabMic.setOnClickListener {
                 try {
-
                     if (SpeechRecognizer.isRecognitionAvailable(this)) {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -90,11 +89,20 @@ class VoiceNoteActivity : AppCompatActivity() {
                     val content = etVoiceContent.text.toString().trim()
 
                     if (title.isNotEmpty() && content.isNotEmpty()) {
-                        val newNote = Note(title = title, body = content, userId = 5)
-                        val apiRequest = AddNoteRequest(body = content, userId = 5)
+                        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-                        viewModel.insertNote(newNote)
-                        viewModel.addNote(apiRequest)
+                        if (currentUserId.isEmpty()) {
+                            Toast.makeText(this, "User not logged in!", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+
+                        val voiceNote = Note(
+                            title = title,
+                            body = content,
+                            userId = currentUserId
+                        )
+
+                        viewModel.insertNote(voiceNote)
 
                         Toast.makeText(this, "Voice Note Saved Successfully!", Toast.LENGTH_SHORT).show()
                         finish()

@@ -2,16 +2,16 @@ package com.example.myapplication
 
 import android.os.Bundle
 import android.widget.Button
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.database.AppDatabase
-import com.example.myapplication.model.AddNoteRequest
 import com.example.myapplication.model.Note
 import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
+import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
 
 class AddNoteActivity : AppCompatActivity() {
 
@@ -26,26 +26,35 @@ class AddNoteActivity : AppCompatActivity() {
         val factory = NoteViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
 
-        val etNoteTitle = findViewById<EditText>(R.id.etNoteTitle)
-        val etNoteContent = findViewById<EditText>(R.id.etNoteContent)
-        val btnSaveNote = findViewById<Button>(R.id.btnSaveNote)
+        val etNoteTitle = findViewById<TextInputEditText>(R.id.etNoteTitle)
+        val etNoteContent = findViewById<TextInputEditText>(R.id.etNoteContent)
+        val btnSave = findViewById<Button>(R.id.btnSaveNote)
 
-        btnSaveNote.setOnClickListener {
+        btnSave.setOnClickListener {
             val title = etNoteTitle.text.toString().trim()
-            val content = etNoteContent.text.toString().trim()
+            val body = etNoteContent.text.toString().trim()
 
-            if (title.isNotEmpty() && content.isNotEmpty()) {
-                val newNote = Note(title = title, body = content, userId = 5)
-                val apiRequest = AddNoteRequest(body = content, userId = 5)
-
-                viewModel.insertNote(newNote)
-                viewModel.addNote(apiRequest)
-
-                Toast.makeText(this, "Note Saved Successfully!", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Please fill in all fields!", Toast.LENGTH_SHORT).show()
+            if (title.isEmpty() || body.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+            if (currentUserId.isEmpty()) {
+                Toast.makeText(this, "User not logged in!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val note = Note(
+                title = title,
+                body = body,
+                userId = currentUserId
+            )
+
+            viewModel.insertNote(note)
+            Toast.makeText(this, "Note Saved Successfully!", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 }
