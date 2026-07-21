@@ -7,17 +7,16 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.auth.FirebaseAuth
+import androidx.lifecycle.lifecycleScope
+import com.example.myapplication.api.RetrofitInstance
+import com.example.myapplication.model.User
+import kotlinx.coroutines.launch
 
 class SignupActivity : AppCompatActivity() {
-
-    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup)
-
-        auth = FirebaseAuth.getInstance()
 
         val etEmail = findViewById<EditText>(R.id.etEmail)
         val etPassword = findViewById<EditText>(R.id.etPassword)
@@ -38,16 +37,24 @@ class SignupActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        Toast.makeText(this, "Account Created Successfully!", Toast.LENGTH_SHORT).show()
-                        startActivity(Intent(this, MainActivity::class.java))
+
+            val newUser = User(name = email.substringBefore("@"), email = email, password = password)
+
+            lifecycleScope.launch {
+                try {
+                    val response = RetrofitInstance.api.registerUser(newUser)
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@SignupActivity, "Account Created Successfully!", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this@SignupActivity, LoginActivity::class.java))
                         finish()
                     } else {
-                        Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@SignupActivity, "Signup Failed!", Toast.LENGTH_SHORT).show()
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(this@SignupActivity, "Network Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
+            }
         }
 
         tvLoginRedirect.setOnClickListener {

@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
@@ -11,7 +12,6 @@ import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.auth.FirebaseAuth
 
 class AddNoteActivity : AppCompatActivity() {
 
@@ -28,32 +28,31 @@ class AddNoteActivity : AppCompatActivity() {
 
         val etNoteTitle = findViewById<TextInputEditText>(R.id.etNoteTitle)
         val etNoteContent = findViewById<TextInputEditText>(R.id.etNoteContent)
-        val btnSave = findViewById<Button>(R.id.btnSaveNote)
+        val btnSaveNote = findViewById<Button>(R.id.btnSaveNote)
 
-        btnSave.setOnClickListener {
+        val sharedPref = getSharedPreferences("UserPref", Context.MODE_PRIVATE)
+        val currentUserId = sharedPref.getString("userId", "") ?: ""
+
+        btnSaveNote.setOnClickListener {
             val title = etNoteTitle.text.toString().trim()
             val body = etNoteContent.text.toString().trim()
 
-            if (title.isEmpty() || body.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            if (title.isEmpty() && body.isEmpty()) {
+                Toast.makeText(this, "Please write something to save", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-
-            if (currentUserId.isEmpty()) {
-                Toast.makeText(this, "User not logged in!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val note = Note(
+            val newNote = Note(
+                id = 0,
                 title = title,
                 body = body,
-                userId = currentUserId
+                userId = currentUserId,
+                isSynced = false
             )
 
-            viewModel.insertNote(note)
-            Toast.makeText(this, "Note Saved Successfully!", Toast.LENGTH_SHORT).show()
+            viewModel.addNote(newNote)
+
+            Toast.makeText(this, "Note saved successfully", Toast.LENGTH_SHORT).show()
             finish()
         }
     }

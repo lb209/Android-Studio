@@ -5,44 +5,39 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.model.Note
 import com.example.myapplication.repository.NoteRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class NoteViewModel(
-    private val repository: NoteRepository
-) : ViewModel() {
+class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
 
-    val allNotes: LiveData<List<Note>> = repository.allNotes
-
-    fun getNotes() {
-
+    fun getAllNotes(): LiveData<List<Note>> {
+        return repository.getAllNotes()
     }
 
-    fun insertNote(note: Note) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.insertNote(note)
+    fun getNotesByUserId(userId: String): LiveData<List<Note>> {
+        return repository.getNotesByUserId(userId)
+    }
+
+    fun fetchNotesFromServer(userId: String) {
+        viewModelScope.launch {
+            repository.fetchNotesFromServer(userId)
+        }
+    }
+
+    fun addNote(note: Note) {
+        viewModelScope.launch {
+            repository.addNote(note)
+        }
+    }
+
+    fun deleteNote(noteId: Int) {
+        viewModelScope.launch {
+            repository.deleteNote(noteId)
         }
     }
 
     fun updateNote(note: Note) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.updateNote(note)
         }
-    }
-
-    fun deleteNote(id: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteNote(id)
-        }
-    }
-
-    fun deleteAllNotes() {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteAllNotes()
-        }
-    }
-
-    fun searchNotes(search: String): LiveData<List<Note>> {
-        return repository.searchNotes(search)
     }
 }

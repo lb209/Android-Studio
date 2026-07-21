@@ -1,168 +1,159 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.adapter.NoteAdapter
 import com.example.myapplication.database.AppDatabase
-import com.example.myapplication.model.Note
 import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: NoteAdapter
     private lateinit var viewModel: NoteViewModel
-    private lateinit var auth: FirebaseAuth
-    private var fullNotesList: List<Note> = emptyList()
-    private var isSearching: Boolean = false
+    private var currentUserId: String = ""
+    private lateinit var noteAdapter: NoteAdapter
+
+    private lateinit var recyclerViewNotes: RecyclerView
+    private lateinit var fabAddNote: FloatingActionButton
+    private lateinit var btnlayout: LinearLayout
+    private lateinit var writetext: TextView
+    private lateinit var btnVoice: LinearLayout
+    private lateinit var imgSearchIcon: ImageView
+    private lateinit var imgLogout: ImageView
+    private lateinit var normalHeaderContent: RelativeLayout
+    private lateinit var layoutSearchBar: LinearLayout
+    private lateinit var etSearch: EditText
+    private lateinit var imgCloseSearch: ImageView
+
+    private var isFabMenuOpen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        window.statusBarColor = Color.parseColor("#161622")
-
-        auth = FirebaseAuth.getInstance()
-        val currentUser = auth.currentUser
-
-
-        if (currentUser == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
-        }
-
-        val currentUserId = currentUser.uid
+        val sharedPref = getSharedPreferences("UserPref", Context.MODE_PRIVATE)
+        currentUserId = sharedPref.getString("userId", "") ?: ""
 
         val database = AppDatabase.getDatabase(this)
         val repository = NoteRepository(database.noteDao())
         val factory = NoteViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
 
-        val layoutHeader = findViewById<RelativeLayout>(R.id.layoutHeader)
-        val layoutSearchBar = findViewById<LinearLayout>(R.id.layoutSearchBar)
-        val imgSearchIcon = findViewById<ImageView>(R.id.imgSearchIcon)
-        val imgLogout = findViewById<ImageView>(R.id.imgLogout) // 👈 لاگ آؤٹ آئیکن
-        val imgCloseSearch = findViewById<ImageView>(R.id.imgCloseSearch)
-        val etSearch = findViewById<EditText>(R.id.etSearch)
+        initViews()
+        setupListeners()
+        setupRecyclerView()
+        setupSearch()
+    }
 
-        val fabAddNote = findViewById<FloatingActionButton>(R.id.fabAddNote)
-        val btnlayout = findViewById<LinearLayout>(R.id.btnlayout)
-        val writetext = findViewById<TextView>(R.id.writetext)
-        val btnVoice = findViewById<LinearLayout>(R.id.btnVoice)
+    private fun initViews() {
+        recyclerViewNotes = findViewById(R.id.recyclerViewNotes)
+        fabAddNote = findViewById(R.id.fabAddNote)
+        btnlayout = findViewById(R.id.btnlayout)
+        writetext = findViewById(R.id.writetext)
+        btnVoice = findViewById(R.id.btnVoice)
+        imgSearchIcon = findViewById(R.id.imgSearchIcon)
+        imgLogout = findViewById(R.id.imgLogout)
+        normalHeaderContent = findViewById(R.id.normalHeaderContent)
+        layoutSearchBar = findViewById(R.id.layoutSearchBar)
+        etSearch = findViewById(R.id.etSearch)
+        imgCloseSearch = findViewById(R.id.imgCloseSearch)
+    }
 
-        recyclerView = findViewById(R.id.recyclerViewNotes)
-        adapter = NoteAdapter(viewModel)
-
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-
-
-        viewModel.allNotes.observe(this) { notes ->
-            if (notes != null) {
-
-                val userSpecificNotes = notes.filter { it.userId == currentUserId }
-                fullNotesList = userSpecificNotes
-
-                if (!isSearching && etSearch.text.toString().trim().isEmpty()) {
-                    adapter.setData(userSpecificNotes)
-                }
-            }
-        }
-
-        viewModel.getNotes()
-
-        // 🟢 LOGOUT FUNCTIONALITY
-        imgLogout?.setOnClickListener {
-            auth.signOut()
-            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
-        }
-
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s.toString().trim().lowercase()
-                if (query.isEmpty()) {
-                    adapter.setData(fullNotesList)
-                } else {
-                    val filteredList = fullNotesList.filter {
-                        it.title.lowercase().contains(query) || it.body.lowercase().contains(query)
-                    }
-                    adapter.setData(filteredList)
-                }
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
-        imgSearchIcon.setOnClickListener {
-            isSearching = true
-            layoutHeader.visibility = View.INVISIBLE
-            layoutSearchBar.visibility = View.VISIBLE
-
-            val params = recyclerView.layoutParams as RelativeLayout.LayoutParams
-            params.addRule(RelativeLayout.BELOW, R.id.layoutSearchBar)
-            recyclerView.layoutParams = params
-
-            etSearch.post {
-                etSearch.requestFocus()
-            }
-        }
-
-        imgCloseSearch.setOnClickListener {
-            isSearching = false
-            etSearch.text.clear()
-            layoutSearchBar.visibility = View.GONE
-            layoutHeader.visibility = View.VISIBLE
-
-            val params = recyclerView.layoutParams as RelativeLayout.LayoutParams
-            params.addRule(RelativeLayout.BELOW, R.id.layoutHeader)
-            recyclerView.layoutParams = params
-
-            adapter.setData(fullNotesList)
-        }
-
+    private fun setupListeners() {
         fabAddNote.setOnClickListener {
-            if (btnlayout.visibility == View.GONE) {
-                btnlayout.visibility = View.VISIBLE
-                fabAddNote.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            } else {
-                btnlayout.visibility = View.GONE
-                fabAddNote.setImageResource(android.R.drawable.ic_input_add)
-            }
+            toggleFabMenu()
         }
 
         writetext.setOnClickListener {
-            btnlayout.visibility = View.GONE
-            fabAddNote.setImageResource(android.R.drawable.ic_input_add)
+            toggleFabMenu()
             startActivity(Intent(this, AddNoteActivity::class.java))
         }
 
         btnVoice.setOnClickListener {
-            btnlayout.visibility = View.GONE
-            fabAddNote.setImageResource(android.R.drawable.ic_input_add)
+            toggleFabMenu()
             startActivity(Intent(this, VoiceNoteActivity::class.java))
+        }
+
+
+        imgSearchIcon.setOnClickListener {
+            normalHeaderContent.visibility = View.GONE
+            layoutSearchBar.visibility = View.VISIBLE
+            etSearch.requestFocus()
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+
+        imgCloseSearch.setOnClickListener {
+            etSearch.setText("")
+            layoutSearchBar.visibility = View.GONE
+            normalHeaderContent.visibility = View.VISIBLE
+            noteAdapter.filter("")
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+        }
+
+        imgLogout.setOnClickListener {
+            val sharedPref = getSharedPreferences("UserPref", Context.MODE_PRIVATE)
+            sharedPref.edit().clear().apply()
+            finish()
+        }
+    }
+
+    private fun setupSearch() {
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                noteAdapter.filter(s.toString().trim())
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
+    private fun toggleFabMenu() {
+        if (isFabMenuOpen) {
+            btnlayout.visibility = View.GONE
+            isFabMenuOpen = false
+        } else {
+            btnlayout.visibility = View.VISIBLE
+            isFabMenuOpen = true
+        }
+    }
+
+    private fun setupRecyclerView() {
+        recyclerViewNotes.layoutManager = LinearLayoutManager(this)
+        noteAdapter = NoteAdapter(viewModel)
+        recyclerViewNotes.adapter = noteAdapter
+
+        if (currentUserId.isNotEmpty()) {
+            viewModel.getNotesByUserId(currentUserId).observe(this) { notes ->
+                notes?.let {
+                    noteAdapter.setData(it)
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (currentUserId.isNotEmpty()) {
+            viewModel.fetchNotesFromServer(currentUserId)
         }
     }
 }

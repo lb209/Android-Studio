@@ -15,6 +15,8 @@ import com.example.myapplication.viewmodel.NoteViewModel
 class NoteAdapter(private val viewModel: NoteViewModel) : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
 
     private var notesList = emptyList<Note>()
+    private var fullNotesList = emptyList<Note>()
+    private var currentQuery: String = ""
 
     class NoteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvNoteTitle: TextView = itemView.findViewById(R.id.tvNoteTitle)
@@ -55,7 +57,26 @@ class NoteAdapter(private val viewModel: NoteViewModel) : RecyclerView.Adapter<N
     }
 
     fun setData(newNotes: List<Note>) {
-        this.notesList = newNotes
+        this.fullNotesList = newNotes
+        if (currentQuery.isNotEmpty()) {
+            notesList = fullNotesList.filter {
+                it.title.contains(currentQuery, ignoreCase = true) || it.body.contains(currentQuery, ignoreCase = true)
+            }
+        } else {
+            notesList = newNotes
+        }
+        notifyDataSetChanged()
+    }
+
+    fun filter(query: String) {
+        currentQuery = query
+        notesList = if (query.isEmpty()) {
+            fullNotesList
+        } else {
+            fullNotesList.filter {
+                it.title.contains(query, ignoreCase = true) || it.body.contains(query, ignoreCase = true)
+            }
+        }
         notifyDataSetChanged()
     }
 }

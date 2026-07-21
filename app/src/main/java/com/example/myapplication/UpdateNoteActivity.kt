@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
@@ -11,12 +12,12 @@ import com.example.myapplication.repository.NoteRepository
 import com.example.myapplication.viewmodel.NoteViewModel
 import com.example.myapplication.viewmodel.NoteViewModelFactory
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.auth.FirebaseAuth
 
 class UpdateNoteActivity : AppCompatActivity() {
 
     private lateinit var viewModel: NoteViewModel
     private var noteId: Int = -1
+    private var currentUserId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,29 +28,30 @@ class UpdateNoteActivity : AppCompatActivity() {
         val factory = NoteViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
 
-        val etNoteTitle = findViewById<TextInputEditText>(R.id.etNoteTitle)
-        val etNoteContent = findViewById<TextInputEditText>(R.id.etNoteContent)
+        val etUpdateNoteTitle = findViewById<TextInputEditText>(R.id.etUpdateNoteTitle)
+        val etUpdateNoteContent = findViewById<TextInputEditText>(R.id.etUpdateNoteContent)
         val btnUpdateNote = findViewById<Button>(R.id.btnUpdateNote)
 
-        if (intent.hasExtra("NOTE_ID")) {
-            noteId = intent.getIntExtra("NOTE_ID", -1)
-            etNoteTitle.setText(intent.getStringExtra("NOTE_TITLE") ?: "")
-            etNoteContent.setText(intent.getStringExtra("NOTE_BODY") ?: "")
+        val sharedPref = getSharedPreferences("UserPref", Context.MODE_PRIVATE)
+        currentUserId = sharedPref.getString("userId", "") ?: ""
+
+        if (intent.hasExtra("note_id")) {
+            noteId = intent.getIntExtra("note_id", -1)
+            etUpdateNoteTitle.setText(intent.getStringExtra("note_title") ?: "")
+            etUpdateNoteContent.setText(intent.getStringExtra("note_body") ?: "")
         }
 
         btnUpdateNote.setOnClickListener {
-            val title = etNoteTitle.text.toString().trim()
-            val body = etNoteContent.text.toString().trim()
+            val title = etUpdateNoteTitle.text.toString().trim()
+            val body = etUpdateNoteContent.text.toString().trim()
 
             if (title.isEmpty() || body.isEmpty()) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-
-            if (currentUserId.isEmpty()) {
-                Toast.makeText(this, "User not logged in!", Toast.LENGTH_SHORT).show()
+            if (noteId == -1) {
+                Toast.makeText(this, "Error: Invalid Note ID", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -57,7 +59,8 @@ class UpdateNoteActivity : AppCompatActivity() {
                 id = noteId,
                 title = title,
                 body = body,
-                userId = currentUserId
+                userId = currentUserId,
+                isSynced = true
             )
 
             viewModel.updateNote(updatedNote)
